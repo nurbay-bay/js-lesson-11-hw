@@ -32,25 +32,52 @@ class Product {
     favIcon.addEventListener("click", () => {
       this.favorite = !this.favorite
       favIcon.src = this.favorite ? "images/fav.svg" : "images/nofav.svg"
+      saveFavorites()
     })
   }
 
   addFunc() {
     this.quantity += 1
+
+    updateLocalStorage()
     card_inner()
   }
 
   subFunc() {
     this.quantity -= 1
+
+    updateLocalStorage()
     card_inner()
   }
 
   delToCart() {
     selected_item_id = selected_item_id.filter((number) => number !== this.id);
     this.quantity = 0
+
+    updateLocalStorage()
     card_inner()
   }
 }
+
+// Save variables
+function saveFavorites() {
+  const favs = products.filter(p => p.favorite).map(p => p.id)
+  localStorage.setItem("favorites", JSON.stringify(favs))
+}
+
+function saveCart() {
+  localStorage.setItem("cart", JSON.stringify(selected_item_id))
+}
+
+function updateLocalStorage() {
+  const cartData = selected_item_id.map(id => ({
+    id,
+    quantity: products.find(p => p.id === id)?.quantity || 1
+  }))
+  localStorage.setItem("cart", JSON.stringify(cartData))
+}
+
+// Save variables -end
 
 function showCategories(item) {
   const container = document.getElementById("categories-list")
@@ -68,6 +95,7 @@ function add_to_cart() {
       if (selected_item_id.includes(e.target.id)) products.find(product => product.id === e.target.id).addFunc()
       else {
         selected_item_id.push(e.target.id)
+        saveCart()
         products.find(product => product.id === e.target.id).addFunc()
       }
       container.innerHTML = ''
@@ -164,7 +192,35 @@ new Product("3006", "Сыр Гауда 45% 200г", 1990, "Продукты пи�
 let selected_item_id = []
 
 categories.forEach(category => showCategories(category))
+
+function loadFavorites() {
+  const favs = JSON.parse(localStorage.getItem("favorites")) || []
+  products.forEach(p => {
+    if (favs.includes(p.id)) p.favorite = true
+  })
+}
+loadFavorites()
+
 products.forEach(product => product.showProduct())
+
+function loadCart() {
+  selected_item_id = JSON.parse(localStorage.getItem("cart")) || []
+  card_inner()
+}
+loadCart()
+
+const savedCart = JSON.parse(localStorage.getItem("cart")) || [];
+savedCart.forEach(item => {
+  const product = products.find(p => p.id === item.id);
+  if (product) {
+    product.quantity = item.quantity;
+    if (!selected_item_id.includes(item.id)) {
+      selected_item_id.push(item.id);
+    }
+  }
+})
+card_inner()
+
 add_to_cart()
 
 const block_items = document.querySelector("#items")
